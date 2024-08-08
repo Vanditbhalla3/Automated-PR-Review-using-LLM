@@ -11,7 +11,7 @@ import tiktoken
 
 logging.basicConfig(level=logging.INFO)
 
-load_dotenv("cr_local.env")
+load_dotenv("local.env")
 
 def review_code_with_gpt4(code_diff, openai_api_key):
     """
