@@ -37,8 +37,8 @@ Follow these steps to install and setup the Code Reviewer:
 1. **Clone the Repository**
    
    ```sh
-   git clone https://github.com/your-username/your-repository.git
-   cd your-repository
+   git clone https://github.com/Vanditbhalla3/Automated-PR-Review-using-LLM.git
+   cd Automated-PR-Review-using-LLM
 2. **Create a Python Virtual Environment**
    
    ```sh
