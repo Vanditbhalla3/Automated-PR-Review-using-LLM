@@ -8,6 +8,7 @@ from nbconvert import PythonExporter
 from openai import OpenAI
 from urllib.parse import urlparse, parse_qs
 import tiktoken
+from more_context_lines import highlight_changes_in_full_files
 
 logging.basicConfig(level=logging.INFO)
 
@@ -64,55 +65,6 @@ def convert_ipynb_to_py(notebook_content):
     exporter = PythonExporter()
     script, _ = exporter.from_notebook_node(notebook_node)
     return script
-
-def fetch_pr_diff_with_context(owner, repo, pr_number, context_lines=5, github_token=None):
-    """
-    Fetches the PR diff from GitHub with additional context lines.
-    """
-    url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}"
-    headers = {"Accept": "application/vnd.github.v3.diff"}
-    if github_token:
-        headers["Authorization"] = f"token {github_token}"
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        logging.error(f"Failed to fetch PR details. Status Code: {response.status_code}")
-        return None
-    
-    diff_lines = response.text.splitlines()
-    enhanced_diff = []
-    line_count = len(diff_lines)
-
-    i = 0
-    while i < line_count:
-        line = diff_lines[i]
-        if line.startswith('diff --git'):
-            
-            enhanced_diff.append(line)  
-            
-            enhanced_diff.append(diff_lines[i + 1])
-            enhanced_diff.append(diff_lines[i + 2])
-            i += 3
-        elif line.startswith('@@'):
-            
-            parts = line.split()
-            old_range, new_range = parts[1], parts[2]
-            old_start, old_length = map(int, old_range[1:].split(','))
-            new_start, new_length = map(int, new_range[1:].split(','))
-
-            
-            start_line = max(0, i - context_lines)
-            end_line = min(line_count, i + new_length + context_lines + 1)
-
-            enhanced_diff.append(line)  
-            enhanced_diff.extend(diff_lines[max(0, i + 1 - context_lines): end_line])
-            i = end_line - 1  
-        else:
-            
-            i += 1
-            continue
-        i += 1
-
-    return "\n".join(enhanced_diff)
 
 def filter_diff_based_on_extensions(diff, exclude_extensions, include_extensions):
     """
@@ -182,7 +134,8 @@ def main(pr_link):
     openai_api_key = os.getenv("OPEN_AI_API_KEY")
 
     logging.info(f"Fetching PR #{pr_number} diff from {owner}/{repo}...")
-    pr_diff = fetch_pr_diff_with_context(owner, repo, pr_number, context_lines=5 , github_token=github_token)
+    
+    pr_diff = highlight_changes_in_full_files(pr_link, github_token)
     
     if pr_diff:
         logging.info("Processing diff code...")
