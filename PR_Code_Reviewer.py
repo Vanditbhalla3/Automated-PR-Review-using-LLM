@@ -153,8 +153,9 @@ def main(pr_link):
         feedback = split_diff_and_review(pr_diff_filtered, openai_api_key)
         print(feedback)
         print("-----------------")
-        print(f'Tokens Used: {num_tokens_from_string(feedback, "gpt-4o")}')
-
+        print(f'Tokens Input:{num_tokens_from_string(pr_diff_filtered, "gpt-4o")}')
+        print(f'Tokens Output: {num_tokens_from_string(feedback, "gpt-4o")}')
+        
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
