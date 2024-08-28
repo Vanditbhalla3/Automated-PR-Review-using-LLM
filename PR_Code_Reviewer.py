@@ -134,6 +134,7 @@ def main(pr_link):
     openai_api_key = os.getenv("OPEN_AI_API_KEY")
     input_price = Decimal(os.getenv("input_price"))
     output_price = Decimal(os.getenv("output_price"))
+    logging.info(f"Fetching PR #{pr_number} diff from {owner}/{repo}...")
     
     pr_diff = highlight_changes_in_full_files(pr_link, github_token)
     
