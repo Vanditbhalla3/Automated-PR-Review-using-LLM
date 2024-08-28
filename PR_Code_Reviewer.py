@@ -132,7 +132,8 @@ def main(pr_link):
     owner, repo, _, pr_number = path_parts[:4]
     github_token = os.getenv("GITHUB_API_KEY")
     openai_api_key = os.getenv("OPEN_AI_API_KEY")
-
+    input_price = Decimal(os.getenv("input_price"))
+    output_price = Decimal(os.getenv("output_price"))
     logging.info(f"Fetching PR #{pr_number} diff from {owner}/{repo}...")
     
     pr_diff = highlight_changes_in_full_files(pr_link, github_token)
@@ -153,8 +154,12 @@ def main(pr_link):
         feedback = split_diff_and_review(pr_diff_filtered, openai_api_key)
         print(feedback)
         print("-----------------")
-        print(f'Tokens Input:{num_tokens_from_string(pr_diff_filtered, "gpt-4o")}')
-        print(f'Tokens Output: {num_tokens_from_string(feedback, "gpt-4o")}')
+        numInputTokens = num_tokens_from_string(pr_diff_filtered, "gpt-4o")
+        numOutputTokens = num_tokens_from_string(feedback, "gpt-4o")
+        print(f'Tokens Input:{numInputTokens}')
+        print(f'Tokens Output: {numOutputTokens}')
+        print(f'Price for Input Tokens:{input_price * numInputTokens}$')
+        print(f'Price for Output Tokens:{output_price * numOutputTokens}$')
         
 if __name__ == "__main__":
 
