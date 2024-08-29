@@ -8,6 +8,7 @@ from nbconvert import PythonExporter
 from openai import OpenAI
 from urllib.parse import urlparse, parse_qs
 import tiktoken
+from decimal import Decimal
 from more_context_lines import highlight_changes_in_full_files
 
 logging.basicConfig(level=logging.INFO)
@@ -88,16 +89,23 @@ def filter_diff_based_on_extensions(diff, exclude_extensions, include_extensions
 
     return "\n".join(filtered_diff), ipynb_diff
 
-def split_diff_and_review(code_diff, openai_api_key, max_tokens=4335):
+def split_diff_and_review(code_diff, openai_api_key, max_tokens=25000):
     """
-    Splits the diff into chunks for review.
+    Splits the diff into chunks for review, unless it is within the token limit.
     """
+    total_tokens = num_tokens_from_string(code_diff, "gpt-4o")
+
+    # If the total tokens are within the limit, only one API call is needed
+    if total_tokens + 288 <= max_tokens:
+        feedback = review_code_with_gpt4(code_diff, openai_api_key)
+        return feedback
+
+    # If the total tokens exceed the limit, split the diff and review in chunks
     feedbacks = []
     chunk = ""
 
     for line in code_diff.split("\n"):
         if num_tokens_from_string(chunk, "gpt-4o") + num_tokens_from_string(line, "gpt-4o") + 1 > max_tokens:
-
             feedback = review_code_with_gpt4(chunk, openai_api_key)
             feedbacks.append(feedback)
             chunk = line
@@ -108,7 +116,20 @@ def split_diff_and_review(code_diff, openai_api_key, max_tokens=4335):
         feedback = review_code_with_gpt4(chunk, openai_api_key)
         feedbacks.append(feedback)
 
-    return " ".join(feedbacks)
+    if len(feedbacks) == 1:
+        return feedbacks[0]
+
+    else:
+        # Second API call to summarize/combine the feedback
+        combined_feedback = " ".join(feedbacks)
+        summary_prompt = (
+            f"Here are the feedbacks for different chunks of a code review:\n{combined_feedback}\n\n"
+            f"Please summarize this feedback into a single comprehensive code review."
+        )
+        
+        final_feedback = review_code_with_gpt4(summary_prompt, openai_api_key)
+
+        return final_feedback
 
 def num_tokens_from_string(string: str, model_name: str) -> int:
     try:
