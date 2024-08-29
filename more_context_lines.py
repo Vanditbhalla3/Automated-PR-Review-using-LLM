@@ -87,10 +87,8 @@ def apply_diff_to_file(diff, file_content, context_lines=5):
             while i < len(diff_lines) and not diff_lines[i].startswith('@@'):
                 diff_line = diff_lines[i]
                 if diff_line.startswith('+'):
-                    # chunk_lines.append(f"\033[92m{diff_line}\033[0m")
                     chunk_lines.append(f"{diff_line}")
                 elif diff_line.startswith('-'):
-                    # chunk_lines.append(f"\033[91m{diff_line}\033[0m")
                     chunk_lines.append(f"{diff_line}")
                     original_lines_count += 1
                 else:
@@ -127,6 +125,7 @@ def highlight_changes_in_full_files(pr_link, github_token):
         
         if pr_diff:
             file_diffs = pr_diff.split("diff --git")
+            all_highlighted_content = []  # Store the highlighted content for all files
             for file_diff in file_diffs[1:]:
                 file_info = file_diff.splitlines()[0]
                 file_path = file_info.split(" ")[1][2:]  # Remove 'a/' or 'b/' prefix
@@ -136,9 +135,12 @@ def highlight_changes_in_full_files(pr_link, github_token):
                 if full_file_content:
                     print(f"Applying diff to file: {file_path}")
                     highlighted_content = apply_diff_to_file(file_diff, full_file_content, context_lines=5)
-                    # print(highlighted_content)
+                    # Include the file path in the highlighted content
+                    file_highlighted_content = f"\nFile: {file_path}\n\n{highlighted_content}"
+                    all_highlighted_content.append(file_highlighted_content)  # Add to list
                     print("\n" + "-"*30 + "\n")
-                    return highlighted_content
+            
+            return "\n".join(all_highlighted_content)  # Return combined highlighted content for all files
 
     except ValueError as e:
         print(f"Error: {e}")
